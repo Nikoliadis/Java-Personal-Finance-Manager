@@ -3,13 +3,13 @@ package com.myfinance.model;
 import java.time.LocalDate;
 
 public class Transaction {
-    private int id; // Χρησιμοποιείται για SQLite primary key
+    private int id;
     private String type;
     private String category;
     private double amount;
     private LocalDate date;
 
-    // Constructor χωρίς id (για προσθήκη)
+    // Constructor
     public Transaction(String type, String category, double amount, LocalDate date) {
         this.type = type;
         this.category = category;

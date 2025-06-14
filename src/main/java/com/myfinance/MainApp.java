@@ -1,112 +1,189 @@
 package com.myfinance;
 
-import com.myfinance.logic.TransactionManagerDB;
-import com.myfinance.model.Transaction;
-
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.io.*;
+import java.net.URI;
 import java.time.LocalDate;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class MainApp {
-    private static TransactionManagerDB manager = new TransactionManagerDB();
     private static DefaultTableModel tableModel;
     private static JTable table;
+    private static JLabel totalLabel;
+    private static JComboBox<String> paymentCombo;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Personal Finance Manager");
+            JFrame frame = new JFrame("Mini POS - Ταμειακή Εφαρμογή");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(750, 500);
+            frame.setSize(900, 550);
             frame.setLayout(new BorderLayout());
 
-            JPanel formPanel = new JPanel(new GridLayout(5, 2, 10, 10));
-            JLabel typeLabel = new JLabel("Τύπος:");
-            String[] types = {"income", "expense"};
-            JComboBox<String> typeCombo = new JComboBox<>(types);
+            JPanel formPanel = new JPanel(new GridLayout(7, 2, 10, 10));
+            JLabel productLabel = new JLabel("Προϊόν:");
+            JTextField productField = new JTextField();
 
-            JLabel categoryLabel = new JLabel("Κατηγορία:");
-            JTextField categoryField = new JTextField();
+            JLabel priceLabel = new JLabel("Τιμή:");
+            JTextField priceField = new JTextField();
 
-            JLabel amountLabel = new JLabel("Ποσό:");
-            JTextField amountField = new JTextField();
+            JLabel quantityLabel = new JLabel("Ποσότητα:");
+            JTextField quantityField = new JTextField("1");
 
-            JButton addBtn = new JButton("Καταχώρηση Συναλλαγής");
-            JButton deleteBtn = new JButton("Διαγραφή Επιλεγμένης");
+            JLabel paymentLabel = new JLabel("Τρόπος Πληρωμής:");
+            String[] methods = {"Μετρητά", "Κάρτα", "PayPal"};
+            paymentCombo = new JComboBox<>(methods);
 
-            formPanel.add(typeLabel);
-            formPanel.add(typeCombo);
-            formPanel.add(categoryLabel);
-            formPanel.add(categoryField);
-            formPanel.add(amountLabel);
-            formPanel.add(amountField);
+            JButton addBtn = new JButton("Προσθήκη");
+            JButton payBtn = new JButton("Ολοκλήρωση Πληρωμής");
+            JButton reportBtn = new JButton("Αναφορά Ημέρας");
+
+            formPanel.add(productLabel);
+            formPanel.add(productField);
+            formPanel.add(priceLabel);
+            formPanel.add(priceField);
+            formPanel.add(quantityLabel);
+            formPanel.add(quantityField);
+            formPanel.add(paymentLabel);
+            formPanel.add(paymentCombo);
             formPanel.add(addBtn);
-            formPanel.add(deleteBtn);
+            formPanel.add(payBtn);
+            formPanel.add(new JLabel());
+            formPanel.add(reportBtn);
 
             frame.add(formPanel, BorderLayout.NORTH);
 
-            String[] columnNames = {"ID", "Τύπος", "Κατηγορία", "Ποσό", "Ημερομηνία"};
-            tableModel = new DefaultTableModel(columnNames, 0) {
-                public boolean isCellEditable(int row, int column) {
-                    return false;
-                }
-            };
+            String[] columns = {"Προϊόν", "Τιμή", "Ποσότητα", "Σύνολο"};
+            tableModel = new DefaultTableModel(columns, 0);
             table = new JTable(tableModel);
-            table.getColumnModel().getColumn(0).setMinWidth(0);
-            table.getColumnModel().getColumn(0).setMaxWidth(0);
-            table.getColumnModel().getColumn(0).setWidth(0);
+            frame.add(new JScrollPane(table), BorderLayout.CENTER);
 
-            JScrollPane tableScroll = new JScrollPane(table);
-            frame.add(tableScroll, BorderLayout.CENTER);
-
-            refreshTable();
+            totalLabel = new JLabel("Σύνολο: 0.00€", SwingConstants.RIGHT);
+            frame.add(totalLabel, BorderLayout.SOUTH);
 
             addBtn.addActionListener(e -> {
                 try {
-                    String type = (String) typeCombo.getSelectedItem();
-                    String category = categoryField.getText().trim();
-                    double amount = Double.parseDouble(amountField.getText().trim());
-                    LocalDate date = LocalDate.now();
+                    String product = productField.getText().trim();
+                    double price = Double.parseDouble(priceField.getText().trim());
+                    int quantity = Integer.parseInt(quantityField.getText().trim());
+                    double total = price * quantity;
 
-                    Transaction t = new Transaction(type, category, amount, date);
-                    manager.addTransaction(t);
-                    refreshTable();
+                    tableModel.addRow(new Object[]{product, price, quantity, total});
+                    updateTotal();
 
-                    categoryField.setText("");
-                    amountField.setText("");
+                    productField.setText("");
+                    priceField.setText("");
+                    quantityField.setText("1");
                 } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(frame, "Μη έγκυρο ποσό", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(frame, "Λάθος τιμή ή ποσότητα", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
                 }
             });
 
-            deleteBtn.addActionListener(e -> {
-                int selectedRow = table.getSelectedRow();
-                if (selectedRow != -1) {
-                    int id = (int) tableModel.getValueAt(selectedRow, 0);
-                    manager.deleteTransaction(id);
-                    refreshTable();
-                } else {
-                    JOptionPane.showMessageDialog(frame, "Επιλέξτε μία συναλλαγή για διαγραφή.", "Προσοχή", JOptionPane.WARNING_MESSAGE);
+            payBtn.addActionListener(e -> {
+                if (tableModel.getRowCount() == 0) {
+                    JOptionPane.showMessageDialog(frame, "Δεν υπάρχουν προϊόντα για πληρωμή", "Προσοχή", JOptionPane.WARNING_MESSAGE);
+                    return;
                 }
+
+                double totalSales = 0;
+                StringBuilder receipt = new StringBuilder();
+                receipt.append("ΑΠΟΔΕΙΞΗ\n");
+                receipt.append("------------------------------\n");
+
+                for (int i = 0; i < tableModel.getRowCount(); i++) {
+                    String name = tableModel.getValueAt(i, 0).toString();
+                    String price = tableModel.getValueAt(i, 1).toString();
+                    String qty = tableModel.getValueAt(i, 2).toString();
+                    String sum = tableModel.getValueAt(i, 3).toString();
+                    totalSales += Double.parseDouble(sum);
+                    receipt.append(name).append(" x").append(qty).append(" -> ").append(sum).append("€\n");
+                }
+
+                receipt.append("------------------------------\n");
+                receipt.append(totalLabel.getText()).append("\n");
+                receipt.append("Τρόπος Πληρωμής: ").append(paymentCombo.getSelectedItem().toString()).append("\n");
+                receipt.append("Ημερομηνία: ").append(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("\n");
+
+                saveReceiptToFile(receipt.toString());
+                saveToDailyLog(totalSales);
+
+                if (paymentCombo.getSelectedItem().toString().equals("PayPal")) {
+                    try {
+                        String amountStr = String.format("%.2f", totalSales).replace(",", ".");
+                        Desktop.getDesktop().browse(new URI("https://www.paypal.com/paypalme/YourName/" + amountStr));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(frame, "Σφάλμα κατά το άνοιγμα του PayPal", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+
+                JOptionPane.showMessageDialog(frame, receipt.toString(), "Απόδειξη", JOptionPane.INFORMATION_MESSAGE);
+                tableModel.setRowCount(0);
+                updateTotal();
             });
+
+            reportBtn.addActionListener(e -> showDailyReport(frame));
 
             frame.setVisible(true);
         });
     }
 
-    private static void refreshTable() {
-        tableModel.setRowCount(0);
-        List<Transaction> transactions = manager.getAllWithId();
-        for (Transaction t : transactions) {
-            Object[] row = {
-                    t.getId(),
-                    t.getType(),
-                    t.getCategory(),
-                    t.getAmount(),
-                    t.getDate()
-            };
-            tableModel.addRow(row);
+    private static void updateTotal() {
+        double total = 0;
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            total += (double) tableModel.getValueAt(i, 3);
+        }
+        totalLabel.setText("Σύνολο: " + String.format("%.2f", total) + "€");
+    }
+
+    private static void saveReceiptToFile(String content) {
+        try {
+            File dir = new File("receipts");
+            if (!dir.exists()) dir.mkdirs();
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            File file = new File(dir, "receipt_" + timestamp + ".txt");
+            try (FileWriter writer = new FileWriter(file)) {
+                writer.write(content);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void saveToDailyLog(double totalSales) {
+        try {
+            File dir = new File("reports");
+            if (!dir.exists()) dir.mkdirs();
+            String date = LocalDate.now().toString();
+            File log = new File(dir, "report_" + date + ".log");
+            try (FileWriter writer = new FileWriter(log, true)) {
+                writer.write(LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm")) + " - Πώληση: " + String.format("%.2f", totalSales) + "€\n");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void showDailyReport(JFrame parent) {
+        String date = LocalDate.now().toString();
+        File log = new File("reports/report_" + date + ".log");
+        if (!log.exists()) {
+            JOptionPane.showMessageDialog(parent, "Δεν υπάρχουν πωλήσεις για σήμερα.", "Αναφορά", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(log));
+            StringBuilder content = new StringBuilder("Αναφορά Πωλήσεων: " + date + "\n\n");
+            String line;
+            while ((line = reader.readLine()) != null) {
+                content.append(line).append("\n");
+            }
+            reader.close();
+            JOptionPane.showMessageDialog(parent, content.toString(), "Αναφορά", JOptionPane.INFORMATION_MESSAGE);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
