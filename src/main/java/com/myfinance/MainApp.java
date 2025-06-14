@@ -1,15 +1,11 @@
 package com.myfinance;
 
-import com.lowagie.text.Document;
-import com.lowagie.text.Element;
-import com.lowagie.text.Paragraph;
-import com.lowagie.text.pdf.PdfWriter;
-import com.lowagie.text.Rectangle;
-import com.lowagie.text.Font;
+import com.lowagie.text.*;
+import com.lowagie.text.pdf.*;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import java.awt.Desktop;
+import java.awt.*;
 import java.io.*;
 import java.net.URI;
 import java.time.LocalDate;
@@ -38,9 +34,9 @@ public class MainApp {
         JFrame frame = new JFrame("Mini POS - Ταμειακή Εφαρμογή");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(950, 580);
-        frame.setLayout(new java.awt.BorderLayout());
+        frame.setLayout(new BorderLayout());
 
-        JPanel formPanel = new JPanel(new java.awt.GridLayout(7, 2, 10, 10));
+        JPanel formPanel = new JPanel(new GridLayout(7, 2, 10, 10));
         JTextField productField = new JTextField();
         JTextField priceField = new JTextField();
         JTextField quantityField = new JTextField("1");
@@ -66,14 +62,14 @@ public class MainApp {
         formPanel.add(reportBtn);
         formPanel.add(graphBtn);
 
-        frame.add(formPanel, java.awt.BorderLayout.NORTH);
+        frame.add(formPanel, BorderLayout.NORTH);
 
         tableModel = new DefaultTableModel(new String[]{"Προϊόν", "Τιμή", "Ποσότητα", "Σύνολο"}, 0);
         table = new JTable(tableModel);
-        frame.add(new JScrollPane(table), java.awt.BorderLayout.CENTER);
+        frame.add(new JScrollPane(table), BorderLayout.CENTER);
 
         totalLabel = new JLabel("Σύνολο: 0.00€", SwingConstants.RIGHT);
-        frame.add(totalLabel, java.awt.BorderLayout.SOUTH);
+        frame.add(totalLabel, BorderLayout.SOUTH);
 
         addBtn.addActionListener(e -> {
             try {
@@ -162,24 +158,22 @@ public class MainApp {
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
             File file = new File(dir, "receipt_" + timestamp + ".pdf");
 
-            Document doc = new Document(new Rectangle(226, 600));
+            Document doc = new Document(new com.lowagie.text.Rectangle(226, 600));
             PdfWriter.getInstance(doc, new FileOutputStream(file));
             doc.open();
 
-            Font titleFont = new Font(Font.COURIER, 12, Font.BOLD);
-            Font normalFont = new Font(Font.COURIER, 9);
+            BaseFont base = BaseFont.createFont("src/main/resources/fonts/DejaVuSansMono.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+            com.lowagie.text.Font titleFont = new com.lowagie.text.Font(base, 12, com.lowagie.text.Font.BOLD);
+            com.lowagie.text.Font normalFont = new com.lowagie.text.Font(base, 9);
 
-            Paragraph info1 = new Paragraph("ΑΦΜ: 123456789", normalFont);
-            Paragraph info2 = new Paragraph("POS1", normalFont);
-            Paragraph info3 = new Paragraph(": " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), normalFont);
 
-            info1.setAlignment(Element.ALIGN_CENTER);
-            info2.setAlignment(Element.ALIGN_CENTER);
-            info3.setAlignment(Element.ALIGN_CENTER);
+            Paragraph title = new Paragraph("ΑΠΟΔΕΙΞΗ ΛΙΑΝΙΚΗΣ ΠΩΛΗΣΗΣ", titleFont);
+            title.setAlignment(Element.ALIGN_CENTER);
+            doc.add(title);
 
-            doc.add(info1);
-            doc.add(info2);
-            doc.add(info3);
+            doc.add(new Paragraph("ΑΦΜ: 123456789", normalFont));
+            doc.add(new Paragraph("POS1", normalFont));
+            doc.add(new Paragraph("Ημερομηνία: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), normalFont));
             doc.add(new Paragraph(" "));
 
             for (String line : content.split("\\n")) {
