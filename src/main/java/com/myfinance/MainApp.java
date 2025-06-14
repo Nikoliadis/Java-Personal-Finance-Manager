@@ -5,7 +5,7 @@ import com.lowagie.text.pdf.*;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import java.awt.*;
+import java.awt.Desktop;
 import java.io.*;
 import java.net.URI;
 import java.time.LocalDate;
@@ -34,9 +34,9 @@ public class MainApp {
         JFrame frame = new JFrame("Mini POS - Ταμειακή Εφαρμογή");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(950, 580);
-        frame.setLayout(new BorderLayout());
+        frame.setLayout(new java.awt.BorderLayout());
 
-        JPanel formPanel = new JPanel(new GridLayout(7, 2, 10, 10));
+        JPanel formPanel = new JPanel(new java.awt.GridLayout(7, 2, 10, 10));
         JTextField productField = new JTextField();
         JTextField priceField = new JTextField();
         JTextField quantityField = new JTextField("1");
@@ -47,7 +47,7 @@ public class MainApp {
         JButton addBtn = new JButton("Προσθήκη");
         JButton payBtn = new JButton("Ολοκλήρωση Πληρωμής");
         JButton reportBtn = new JButton("Αναφορά Ημέρας");
-        JButton graphBtn = new JButton("\uD83D\uDCCA Στατιστικά");
+        JButton graphBtn = new JButton("📊 Στατιστικά");
 
         formPanel.add(new JLabel("Προϊόν:"));
         formPanel.add(productField);
@@ -62,14 +62,14 @@ public class MainApp {
         formPanel.add(reportBtn);
         formPanel.add(graphBtn);
 
-        frame.add(formPanel, BorderLayout.NORTH);
+        frame.add(formPanel, java.awt.BorderLayout.NORTH);
 
         tableModel = new DefaultTableModel(new String[]{"Προϊόν", "Τιμή", "Ποσότητα", "Σύνολο"}, 0);
         table = new JTable(tableModel);
-        frame.add(new JScrollPane(table), BorderLayout.CENTER);
+        frame.add(new JScrollPane(table), java.awt.BorderLayout.CENTER);
 
         totalLabel = new JLabel("Σύνολο: 0.00€", SwingConstants.RIGHT);
-        frame.add(totalLabel, BorderLayout.SOUTH);
+        frame.add(totalLabel, java.awt.BorderLayout.SOUTH);
 
         addBtn.addActionListener(e -> {
             try {
@@ -163,17 +163,24 @@ public class MainApp {
             doc.open();
 
             BaseFont base = BaseFont.createFont("src/main/resources/fonts/DejaVuSansMono.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-            com.lowagie.text.Font titleFont = new com.lowagie.text.Font(base, 12, com.lowagie.text.Font.BOLD);
             com.lowagie.text.Font normalFont = new com.lowagie.text.Font(base, 9);
-
+            com.lowagie.text.Font titleFont = new com.lowagie.text.Font(base, 12, com.lowagie.text.Font.BOLD);
 
             Paragraph title = new Paragraph("ΑΠΟΔΕΙΞΗ ΛΙΑΝΙΚΗΣ ΠΩΛΗΣΗΣ", titleFont);
             title.setAlignment(Element.ALIGN_CENTER);
             doc.add(title);
 
-            doc.add(new Paragraph("ΑΦΜ: 123456789", normalFont));
-            doc.add(new Paragraph("POS1", normalFont));
-            doc.add(new Paragraph("Ημερομηνία: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), normalFont));
+            Paragraph info1 = new Paragraph("ΑΦΜ: 123456789", normalFont);
+            Paragraph info2 = new Paragraph("POS1", normalFont);
+            Paragraph info3 = new Paragraph("Ημερομηνία: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), normalFont);
+
+            info1.setAlignment(Element.ALIGN_CENTER);
+            info2.setAlignment(Element.ALIGN_CENTER);
+            info3.setAlignment(Element.ALIGN_CENTER);
+
+            doc.add(info1);
+            doc.add(info2);
+            doc.add(info3);
             doc.add(new Paragraph(" "));
 
             for (String line : content.split("\\n")) {
