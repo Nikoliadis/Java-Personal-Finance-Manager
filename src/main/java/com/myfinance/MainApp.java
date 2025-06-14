@@ -1,7 +1,8 @@
 package com.myfinance;
 
-import com.lowagie.text.*;
-import com.lowagie.text.pdf.*;
+import com.lowagie.text.Document;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.pdf.PdfWriter;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -150,7 +151,7 @@ public class MainApp {
         });
 
         reportBtn.addActionListener(e -> showDailyReport(frame));
-        graphBtn.addActionListener(e -> JOptionPane.showMessageDialog(frame, "\uD83D\uDEA7 Έρχονται σύντομα γραφήματα πωλήσεων...", "Graph", JOptionPane.INFORMATION_MESSAGE));
+        graphBtn.addActionListener(e -> JOptionPane.showMessageDialog(frame, "📊 Έρχονται σύντομα γραφήματα πωλήσεων...", "Graph", JOptionPane.INFORMATION_MESSAGE));
 
         frame.setVisible(true);
     }
@@ -187,8 +188,25 @@ public class MainApp {
             Document document = new Document();
             PdfWriter.getInstance(document, new FileOutputStream(file));
             document.open();
-            document.add(new Paragraph(content));
+
+            com.lowagie.text.Font titleFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 16, com.lowagie.text.Font.BOLD);
+            com.lowagie.text.Font normalFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 12);
+
+            document.add(new Paragraph("ΑΠΟΔΕΙΞΗ ΠΩΛΗΣΗΣ", titleFont));
+            document.add(new Paragraph("Επιχείρηση: Η Ταμειακή του Νίκου", normalFont));
+            document.add(new Paragraph("Ημερομηνία: " + LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")), normalFont));
+            document.add(new Paragraph(" "));
+
+            String[] lines = content.split("\\n");
+            for (String line : lines) {
+                document.add(new Paragraph(line, normalFont));
+            }
+
             document.close();
+
+            if (Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().open(file);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
