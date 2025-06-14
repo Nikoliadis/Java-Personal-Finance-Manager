@@ -1,5 +1,8 @@
 package com.myfinance;
 
+import com.lowagie.text.*;
+import com.lowagie.text.pdf.*;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -17,7 +20,6 @@ public class MainApp {
     private static JLabel totalLabel;
     private static JComboBox<String> paymentCombo;
 
-    // Stock simulation
     private static Map<String, Integer> stock = new HashMap<>() {{
         put("Καφές", 50);
         put("Νερό", 100);
@@ -25,10 +27,7 @@ public class MainApp {
     }};
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            // Προσθήκη login screen στο μέλλον
-            showPOSWindow();
-        });
+        SwingUtilities.invokeLater(MainApp::showPOSWindow);
     }
 
     private static void showPOSWindow() {
@@ -54,7 +53,7 @@ public class MainApp {
         JButton addBtn = new JButton("Προσθήκη");
         JButton payBtn = new JButton("Ολοκλήρωση Πληρωμής");
         JButton reportBtn = new JButton("Αναφορά Ημέρας");
-        JButton graphBtn = new JButton("📊 Στατιστικά");
+        JButton graphBtn = new JButton("\uD83D\uDCCA Στατιστικά");
 
         formPanel.add(productLabel);
         formPanel.add(productField);
@@ -86,7 +85,6 @@ public class MainApp {
                 int quantity = Integer.parseInt(quantityField.getText().trim());
                 double total = price * quantity;
 
-                // Έλεγχος αποθέματος
                 if (stock.containsKey(product) && stock.get(product) < quantity) {
                     JOptionPane.showMessageDialog(frame, "Μη επαρκές απόθεμα για " + product, "Stock", JOptionPane.WARNING_MESSAGE);
                     return;
@@ -122,7 +120,6 @@ public class MainApp {
                 totalSales += Double.parseDouble(sum);
                 receipt.append(name).append(" x").append(qty).append(" -> ").append(sum).append("€\n");
 
-                // Αφαίρεση απόθεματος
                 if (stock.containsKey(name)) {
                     int q = Integer.parseInt(qty);
                     stock.put(name, stock.get(name) - q);
@@ -135,6 +132,7 @@ public class MainApp {
             receipt.append("Ημερομηνία: ").append(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("\n");
 
             saveReceiptToFile(receipt.toString());
+            saveReceiptAsPDF(receipt.toString());
             saveToDailyLog(totalSales);
 
             if (paymentCombo.getSelectedItem().toString().equals("PayPal")) {
@@ -152,7 +150,7 @@ public class MainApp {
         });
 
         reportBtn.addActionListener(e -> showDailyReport(frame));
-        graphBtn.addActionListener(e -> JOptionPane.showMessageDialog(frame, "🚧 Έρχονται σύντομα γραφήματα πωλήσεων...", "Graph", JOptionPane.INFORMATION_MESSAGE));
+        graphBtn.addActionListener(e -> JOptionPane.showMessageDialog(frame, "\uD83D\uDEA7 Έρχονται σύντομα γραφήματα πωλήσεων...", "Graph", JOptionPane.INFORMATION_MESSAGE));
 
         frame.setVisible(true);
     }
@@ -175,6 +173,23 @@ public class MainApp {
                 writer.write(content);
             }
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void saveReceiptAsPDF(String content) {
+        try {
+            File dir = new File("receipts");
+            if (!dir.exists()) dir.mkdirs();
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            File file = new File(dir, "receipt_" + timestamp + ".pdf");
+
+            Document document = new Document();
+            PdfWriter.getInstance(document, new FileOutputStream(file));
+            document.open();
+            document.add(new Paragraph(content));
+            document.close();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
