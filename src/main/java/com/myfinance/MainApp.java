@@ -5,7 +5,9 @@ import com.lowagie.text.pdf.*;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import java.awt.*;
+import java.awt.Desktop;
+import java.awt.BorderLayout;
+import java.awt.GridLayout;
 import java.io.*;
 import java.net.URI;
 import java.time.LocalDate;
@@ -109,8 +111,7 @@ public class MainApp {
 
             double totalSales = 0;
             StringBuilder receipt = new StringBuilder();
-            receipt.append("ΑΠΟΔΕΙΞΗ\n");
-            receipt.append("------------------------------\n");
+            receipt.append("ΑΠΟΔΕΙΞΗ\n------------------------------\n");
 
             for (int i = 0; i < tableModel.getRowCount(); i++) {
                 String name = tableModel.getValueAt(i, 0).toString();
@@ -184,26 +185,38 @@ public class MainApp {
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
             File file = new File(dir, "receipt_" + timestamp + ".pdf");
 
-            Document document = new Document(new com.lowagie.text.Rectangle(226, 600));
+            Document document = new Document(new Rectangle(226, 600));
             PdfWriter.getInstance(document, new FileOutputStream(file));
             document.open();
 
-            com.lowagie.text.Font titleFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 12, com.lowagie.text.Font.BOLD);
-            com.lowagie.text.Font normalFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 9);
+            Font titleFont = new Font(Font.COURIER, 12, Font.BOLD);
+            Font normalFont = new Font(Font.COURIER, 9);
 
+            Paragraph title = new Paragraph("ΕΠΙΧΕΙΡΗΣΗ ΝΙΚΟΥ", titleFont);
+            title.setAlignment(Element.ALIGN_CENTER);
+            document.add(title);
 
-            document.add(new Paragraph("ΕΠΙΧΕΙΡΗΣΗ ΝΙΚΟΥ", titleFont));
-            document.add(new Paragraph("ΑΦΜ: 123456789", normalFont));
-            document.add(new Paragraph("Ημερομηνία: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), normalFont));
-            document.add(new Paragraph(" "));
+            Paragraph info = new Paragraph("ΑΦΜ: 123456789\nΔΟΥ: ΧΑΛΑΝΔΡΙΟΥ\nΤΑΜΕΙΟ: POS1", normalFont);
+            info.setAlignment(Element.ALIGN_CENTER);
+            document.add(info);
+
+            Paragraph date = new Paragraph("Ημερομηνία: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), normalFont);
+            date.setAlignment(Element.ALIGN_CENTER);
+            document.add(date);
+
+            document.add(new Paragraph("\n"));
 
             String[] lines = content.split("\\n");
             for (String line : lines) {
-                document.add(new Paragraph(line, normalFont));
+                Paragraph p = new Paragraph(line, normalFont);
+                p.setAlignment(Element.ALIGN_CENTER);
+                document.add(p);
             }
 
-            document.add(new Paragraph(" "));
-            document.add(new Paragraph("\u00a9 Ταμειακή v1.0", normalFont));
+            document.add(new Paragraph("\n"));
+            Paragraph footer = new Paragraph("© Ταμειακή v1.0", normalFont);
+            footer.setAlignment(Element.ALIGN_CENTER);
+            document.add(footer);
 
             document.close();
 
