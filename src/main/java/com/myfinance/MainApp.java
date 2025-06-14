@@ -1,8 +1,7 @@
 package com.myfinance;
 
-import com.lowagie.text.Document;
-import com.lowagie.text.Paragraph;
-import com.lowagie.text.pdf.PdfWriter;
+import com.lowagie.text.*;
+import com.lowagie.text.pdf.*;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -151,7 +150,7 @@ public class MainApp {
         });
 
         reportBtn.addActionListener(e -> showDailyReport(frame));
-        graphBtn.addActionListener(e -> JOptionPane.showMessageDialog(frame, "📊 Έρχονται σύντομα γραφήματα πωλήσεων...", "Graph", JOptionPane.INFORMATION_MESSAGE));
+        graphBtn.addActionListener(e -> JOptionPane.showMessageDialog(frame, "\uD83D\uDEA7 Έρχονται σύντομα γραφήματα πωλήσεων...", "Graph", JOptionPane.INFORMATION_MESSAGE));
 
         frame.setVisible(true);
     }
@@ -185,22 +184,26 @@ public class MainApp {
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
             File file = new File(dir, "receipt_" + timestamp + ".pdf");
 
-            Document document = new Document();
+            Document document = new Document(new com.lowagie.text.Rectangle(226, 600));
             PdfWriter.getInstance(document, new FileOutputStream(file));
             document.open();
 
-            com.lowagie.text.Font titleFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 16, com.lowagie.text.Font.BOLD);
-            com.lowagie.text.Font normalFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 12);
+            com.lowagie.text.Font titleFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 12, com.lowagie.text.Font.BOLD);
+            com.lowagie.text.Font normalFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 9);
 
-            document.add(new Paragraph("ΑΠΟΔΕΙΞΗ ΠΩΛΗΣΗΣ", titleFont));
-            document.add(new Paragraph("Επιχείρηση: Η Ταμειακή του Νίκου", normalFont));
-            document.add(new Paragraph("Ημερομηνία: " + LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")), normalFont));
+
+            document.add(new Paragraph("ΕΠΙΧΕΙΡΗΣΗ ΝΙΚΟΥ", titleFont));
+            document.add(new Paragraph("ΑΦΜ: 123456789", normalFont));
+            document.add(new Paragraph("Ημερομηνία: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), normalFont));
             document.add(new Paragraph(" "));
 
             String[] lines = content.split("\\n");
             for (String line : lines) {
                 document.add(new Paragraph(line, normalFont));
             }
+
+            document.add(new Paragraph(" "));
+            document.add(new Paragraph("\u00a9 Ταμειακή v1.0", normalFont));
 
             document.close();
 
