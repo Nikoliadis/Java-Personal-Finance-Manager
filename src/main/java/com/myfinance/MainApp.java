@@ -4,17 +4,20 @@ import com.myfinance.logic.TransactionManagerDB;
 import com.myfinance.model.Transaction;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.time.LocalDate;
+import java.util.List;
 
 public class MainApp {
     private static TransactionManagerDB manager = new TransactionManagerDB();
+    private static DefaultTableModel tableModel;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Personal Finance Manager");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(600, 450);
+            frame.setSize(700, 500);
             frame.setLayout(new BorderLayout());
 
             JPanel formPanel = new JPanel(new GridLayout(5, 2, 10, 10));
@@ -29,8 +32,6 @@ public class MainApp {
             JTextField amountField = new JTextField();
 
             JButton addBtn = new JButton("Καταχώρηση Συναλλαγής");
-            JTextArea log = new JTextArea();
-            log.setEditable(false);
 
             formPanel.add(typeLabel);
             formPanel.add(typeCombo);
@@ -42,12 +43,14 @@ public class MainApp {
             formPanel.add(addBtn);
 
             frame.add(formPanel, BorderLayout.NORTH);
-            frame.add(new JScrollPane(log), BorderLayout.CENTER);
 
+            String[] columnNames = {"Τύπος", "Κατηγορία", "Ποσό", "Ημερομηνία"};
+            tableModel = new DefaultTableModel(columnNames, 0);
+            JTable table = new JTable(tableModel);
+            JScrollPane tableScroll = new JScrollPane(table);
+            frame.add(tableScroll, BorderLayout.CENTER);
 
-            for (Transaction t : manager.getAll()) {
-                log.append(t.toString() + "\n");
-            }
+            refreshTable();
 
             addBtn.addActionListener(e -> {
                 try {
@@ -58,7 +61,7 @@ public class MainApp {
 
                     Transaction t = new Transaction(type, category, amount, date);
                     manager.addTransaction(t);
-                    log.append(t.toString() + "\n");
+                    refreshTable();
 
                     categoryField.setText("");
                     amountField.setText("");
@@ -69,5 +72,19 @@ public class MainApp {
 
             frame.setVisible(true);
         });
+    }
+
+    private static void refreshTable() {
+        tableModel.setRowCount(0);
+        List<Transaction> transactions = manager.getAll();
+        for (Transaction t : transactions) {
+            Object[] row = {
+                    t.getType(),
+                    t.getCategory(),
+                    t.getAmount(),
+                    t.getDate()
+            };
+            tableModel.addRow(row);
+        }
     }
 }
