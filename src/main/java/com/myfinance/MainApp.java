@@ -1,6 +1,6 @@
 package com.myfinance;
 
-import com.myfinance.logic.TransactionManager;
+import com.myfinance.logic.TransactionManagerDB;
 import com.myfinance.model.Transaction;
 
 import javax.swing.*;
@@ -8,12 +8,10 @@ import java.awt.*;
 import java.time.LocalDate;
 
 public class MainApp {
-    private static TransactionManager manager = new TransactionManager();
+    private static TransactionManagerDB manager = new TransactionManagerDB();
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            manager.loadFromCSV();
-
             JFrame frame = new JFrame("Personal Finance Manager");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setSize(600, 450);
@@ -45,6 +43,11 @@ public class MainApp {
 
             frame.add(formPanel, BorderLayout.NORTH);
             frame.add(new JScrollPane(log), BorderLayout.CENTER);
+
+
+            for (Transaction t : manager.getAll()) {
+                log.append(t.toString() + "\n");
+            }
 
             addBtn.addActionListener(e -> {
                 try {
