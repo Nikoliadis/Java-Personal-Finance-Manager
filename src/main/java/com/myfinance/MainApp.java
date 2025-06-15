@@ -1,5 +1,10 @@
 package com.myfinance;
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.*;
 
@@ -8,6 +13,8 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.Desktop;
 import java.io.*;
 import java.net.URI;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -118,6 +125,7 @@ public class MainApp {
             receipt.append("Ημερομηνία: ").append(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("\n");
 
             saveReceiptToFile(receipt.toString());
+            generateQR("https://yourdomain.com/receipt?id=12345");
             saveReceiptAsPDF(receipt.toString());
             saveToDailyLog(totalSales);
 
@@ -131,11 +139,15 @@ public class MainApp {
         frame.setVisible(true);
     }
 
-    private static void updateTotal() {
-        double total = 0;
-        for (int i = 0; i < tableModel.getRowCount(); i++)
-            total += (double) tableModel.getValueAt(i, 3);
-        totalLabel.setText("Σύνολο: " + String.format("%.2f", total) + "€");
+    private static void generateQR(String content) {
+        try {
+            QRCodeWriter writer = new QRCodeWriter();
+            BitMatrix matrix = writer.encode(content, BarcodeFormat.QR_CODE, 150, 150);
+            Path path = FileSystems.getDefault().getPath("src/main/resources/qrcode.png");
+            MatrixToImageWriter.writeToPath(matrix, "PNG", path);
+        } catch (IOException | WriterException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void saveReceiptToFile(String content) {
@@ -158,13 +170,18 @@ public class MainApp {
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
             File file = new File(dir, "receipt_" + timestamp + ".pdf");
 
-            Document doc = new Document(new com.lowagie.text.Rectangle(226, 600));
+            Document doc = new Document(new Rectangle(226, 750));
             PdfWriter.getInstance(doc, new FileOutputStream(file));
             doc.open();
 
             BaseFont base = BaseFont.createFont("src/main/resources/fonts/DejaVuSansMono.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-            com.lowagie.text.Font normalFont = new com.lowagie.text.Font(base, 9);
-            com.lowagie.text.Font titleFont = new com.lowagie.text.Font(base, 12, com.lowagie.text.Font.BOLD);
+            Font normalFont = new Font(base, 9);
+            Font titleFont = new Font(base, 12, Font.BOLD);
+
+            Image logo = Image.getInstance(MainApp.class.getResource("/logo.jpg"));
+            logo.scaleToFit(80, 80);
+            logo.setAlignment(Element.ALIGN_CENTER);
+            doc.add(logo);
 
             Paragraph title = new Paragraph("ΑΠΟΔΕΙΞΗ ΛΙΑΝΙΚΗΣ ΠΩΛΗΣΗΣ", titleFont);
             title.setAlignment(Element.ALIGN_CENTER);
@@ -190,6 +207,12 @@ public class MainApp {
             }
 
             doc.add(new Paragraph(" "));
+
+            Image qr = Image.getInstance("src/main/resources/qrcode.png");
+            qr.scaleToFit(80, 80);
+            qr.setAlignment(Element.ALIGN_CENTER);
+            doc.add(qr);
+
             Paragraph footer = new Paragraph("© v1.0", normalFont);
             footer.setAlignment(Element.ALIGN_CENTER);
             doc.add(footer);
@@ -200,6 +223,13 @@ public class MainApp {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private static void updateTotal() {
+        double total = 0;
+        for (int i = 0; i < tableModel.getRowCount(); i++)
+            total += (double) tableModel.getValueAt(i, 3);
+        totalLabel.setText("Σύνολο: " + String.format("%.2f", total) + "€");
     }
 
     private static void saveToDailyLog(double totalSales) {
