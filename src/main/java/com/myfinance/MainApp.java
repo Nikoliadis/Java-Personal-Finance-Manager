@@ -12,7 +12,6 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.Desktop;
 import java.io.*;
-import java.net.URI;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -34,7 +33,36 @@ public class MainApp {
     }};
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(MainApp::showPOSWindow);
+        SwingUtilities.invokeLater(() -> {
+            showLoginDialog();
+            showPOSWindow();
+        });
+    }
+
+    private static void showLoginDialog() {
+        while (true) {
+            JTextField userField = new JTextField();
+            JPasswordField passField = new JPasswordField();
+            Object[] fields = {
+                    "Username:", userField,
+                    "Password:", passField
+            };
+
+            int option = JOptionPane.showConfirmDialog(null, fields, "Σύνδεση", JOptionPane.OK_CANCEL_OPTION);
+
+            if (option == JOptionPane.OK_OPTION) {
+                String username = userField.getText();
+                String password = new String(passField.getPassword());
+
+                if (username.equals("Admin") && password.equals("Admin")) {
+                    break;
+                } else {
+                    JOptionPane.showMessageDialog(null, "❌ Λάθος στοιχεία! Ξαναπροσπάθησε", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+                }
+            } else {
+                System.exit(0);
+            }
+        }
     }
 
     private static void showPOSWindow() {
